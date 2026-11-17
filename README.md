@@ -1,64 +1,124 @@
-# Qoder Sites React starter
+# 破防吧！同学
 
-A React, TypeScript, Vite and Tailwind frontend with a bundled Shadcn component catalog. Vite produces static files in `dist/`. Server behavior belongs in the optional Qoder Sites Function, not a Node or framework server.
+AI 扮演「从不洗碗的嘴硬室友」阿伟，玩家用语言攻击打空 TA 的嘴硬值（HP）。
+宿舍嘴硬室友人人遇到过——**现实吵不赢，游戏里吵赢**。打开即玩、零注册、零教程，90 秒内可通关第一局。
 
-## Develop
+- 赛道：2026 Qoder 高校创造力大赛 · LifeHack 生活娱乐
+- 在线体验：https://pofang-game-hf2x9frsjfn.qoder.zone （当前为 Mock 演示引擎，真 LLM 接入中）
+- 仓库：https://github.com/192aaa/pofang-game
+- 当前版本：**Demo v0 已上线**（前端完整可玩，Mock 引擎，界面标注「演示引擎」）
 
-Use a Node version accepted by `package.json` (`^22.13.0 || >=24.0.0`). Select an installed compatible runtime and keep it selected for installation, development and build:
+## 一、为什么做这个（思路）
+
+比赛核心约束：**8445 支队伍，每赛道仅 14 支进决赛，评委点开链接约 3 分钟定生死**。
+
+1. 否决工具类方向（梗图工厂等）：AI 生图慢且质量不可控、体验一次性、官方点名题撞车严重。
+2. 选**对抗/挑战类**：纯文本流式零等待、有输赢有血条、天然"再来一把"循环；不押宝 AI 幽默感——杠精不需要好笑，需要气人，LLM 很擅长。
+3. 三个放大器：**校园人设**（评委就是大学生，共鸣直接命中）、**TTS 语音处刑**（路演记忆点）、**UGC 造杠精**（社交裂变，冲官方社交传播奖）。
+
+## 二、玩法
+
+- 室友开场暴论：「碗泡三天怎么了？泡软了好洗。」
+- 打字（≤200 字）或点快捷弹药出招：**讲道理 / 阴阳回去 / 胡搅蛮缠**
+- 每回合室友流式回怼，裁判判定伤害（如 −35「命中逻辑漏洞」），血条动画扣减
+- HP=100，最多 8 回合：打空获胜，耗尽失败；3–4 发有效攻击即可通关
+- 「试图开挂」按钮演示**反提示词注入**：注入被拦截，伤害 0、不耗回合
+- 胜负均生成 Canvas 战绩卡（PNG 下载），支持再来一局
+
+## 三、评委三分钟动线（最高设计原则）
+
+一切亮点前置，不指望评委打字、通关或探索：
+
+| 时间 | 评委经历 | 暴露的亮点 |
+|---|---|---|
+| 0–10s | 打开即见暴论+血条，零注册 | 校园共鸣、零门槛（后续：开口语音） |
+| 10–60s | 弹药一键出招，伤害+判定理由弹出 | 裁判 LLM 可见；「试图开挂」喂反作弊高光 |
+| 60–100s | 首关 90 秒内必可破防 | 打击感、破防演出（P1 慢镜头+认输语音） |
+| 100–180s | 战绩卡 + UGC 入口 + 透视模式 | 传播产物；双 LLM 幕后判定可视化 |
+
+## 四、技术架构
+
+```
+前端 SPA（React+TS+Vite+Tailwind，Qoder Sites 静态托管）
+  状态机 useReducer · 打字机流式 · 血条动画 · Canvas 战绩卡
+  EngineAdapter：MockEngine ⇄ ApiEngine 同构接口，即插即换
+        │ POST /api/turn（SSE）
+Qoder Sites 云函数（无状态，P0 无数据库）
+  注入检测(规则) → 演员 LLM(流式回怼) → 裁判 LLM(JSON 判伤) → 结算
+  LLM 走 Qoder 内置 QCA（免自备 Key）；超时/坏 JSON 预置文案兜底
+```
+
+核心思路：**先可玩，再聪明。** Mock 引擎先跑通全部循环，真 LLM 走同一接口即插即换。
+
+| 设计 | 一句话理由 |
+|---|---|
+| 首屏/结算用预置文案，零 AI 调用 | 打开 ≤3s 可玩，关键路径无 AI 延迟 |
+| 双 LLM 分工：演员只嘴硬，裁判只打分 | 防止演着演着认输；认输只由状态机触发 |
+| 反注入做成玩法：规则层+裁判双保险 | 拦截后反嘲讽、0 伤害不耗回合，评委一键可见 |
+| 全链路降级：超时→预置回复池/固定伤害表 | 任何 AI 故障不白屏，路演永不翻车 |
+| 服务端无状态，伤害只由服务端算 | 免数据库；改历史也刷不了分（排行榜安全前提） |
+| 单 Boss 单配置（persona.ts） | 加新 Boss = 加一份配置，不改引擎 |
+| 难度校准写进裁判 Prompt（均值 30±5） | 爽快感是设计出来的 |
+
+## 五、分档交付与分工
+
+| 档 | 内容 | 状态 |
+|---|---|---|
+| P0 保底 | 1 Boss + 双 LLM + 血条 + 弹药 + 战绩卡 | ✅ Mock 已上线；真 LLM 接入中 |
+| P1 冲奖 | TTS 语音 + 破防动效 + 3 Boss + 反作弊嘲讽 + 透视模式 | 待做 |
+| P2 裂变 | UGC 造杠精 + 挑战链接 + 守擂排行榜 | 时间富余才做 |
+
+已砍：每日论题、5 Boss、账号、社区、历史记录。每档都是完整可提交作品，任何一天被打断都交得出去。
+
+**分工（2 人）**：A 前端/动效（对话 UI、血条打击感、破防演出、战绩卡、透视模式、移动端）；B 后端/LLM（云函数、演员+裁判 Prompt 调校、注入防御、TTS、难度调参）。Prompt 初版在 `specs/001-pofang-demo/design.md` §5。
+
+**排期（截止 11/30 18:00）**：11/18–20 真 LLM 跑通 → 11/21–24 P1 + 陌生同学 3 分钟试玩录屏 → 11/25–27 P2 视进度 + 调参 → 11/28–29 小红书/抖音发视频（标题带大赛名，冲传播奖）→ 11/30 缓冲 + 发帖核对。
+
+## 六、备选方案（第二份提交）
+
+规则：**提交不限份数，每队限获一项奖，取最高分那份**——所以值得做第二份买双保险。
+
+### 备选 1：诱导说词（首选，约 2 天）
+
+AI 心里守着一个**禁词**（如"西瓜"），玩家要在不直接说出、不直接要求的情况下，诱使 AI 在自然对话中说出这个词。说出口即胜利，回合耗尽即失败。难度分级 = 禁词常见度 + AI 警惕性人格（"多疑保安""天真学妹"）。
+**为什么首选**：与主作品完全同构——演员 LLM（守词人格）+ 裁判 LLM（判定是否上钩）+ 回合状态机 + 战绩卡全部复用，只换 Prompt 和判定规则；玩法是"反向 Taboo"，心理博弈感强，和主作品形成"说服 TA / 套路 TA"的姊妹篇。
+
+### 备选 2：赛博玄学卡（约 2 天）
+
+输入生日或一个问题，AI 秒出搞笑签文（前世身份 / 今日精神状态 / 赛博运势），渲染成精致卡片一键保存。玄学人人爱测爱转发，传播属性拉满。
+**取舍**：不复用对局架构（但复用云函数模式和 Canvas 卡片渲染）；风险是深度浅，需配"好友合盘"之类第二玩法撑厚度。适合主作品架构复用受阻时的 Plan B。
+
+### 备选 3：AI 审讯室（重，慎选）
+
+3 个 AI 嫌疑人只有 1 个在说谎，玩家提问找出 TA。多 Agent 一致性维护是难点也是技术亮点，但工期 4 天起步。仅当 P1 提前完成才考虑。
+
+**原则：一份 95 分远胜两份 70 分，主作品优先。**
+
+## 七、提交合规清单
+
+- [x] Qoder 开发 + Qoder Sites 公网部署、公开访问
+- [ ] 天池论坛作品帖五要素：自我介绍 / 一句话作品 / 为什么做 / 怎么用(≤5步) / Qoder 制作过程
+- [ ] **全程截图 Qoder 开发过程**（评审材料，从现在开始留）
+- [ ] 两位队员完成天池实名 + 阿里云大学生认证（否则取消获奖资格）
+- [ ] 领学生权益：https://university.aliyun.com/action/qoder （Qoder CN 免费一个月）
+
+## 八、本地运行
+
+Node `^22.13.0 || >=24.0.0`：
 
 ```sh
 npm ci
-npm run dev
+npm run dev        # 开发预览
+npm run build      # 类型检查 + 构建，产物 dist/
 ```
 
-Use the loopback URL printed by Vite. Edit `src/App.tsx`, `src/globals.css` and the title/description in `index.html`. Replace the sample page with the requested product before presenting a first meaningful preview. Import existing UI primitives from `@/components/ui/<component>` and compose them for the site's design. The neutral starter theme is a starting point, not the finished visual direction.
+当前 Demo 纯静态，无需 Deno；M2 接云函数后本地调试用 `npm run dev:function`（需 Deno）。
+部署：Qoder Sites，`dist/` 为 web 产物，接云函数后附加 `functions/`；不要上传项目根目录或 node_modules。
 
-For production output:
+## 文档索引
 
-```sh
-npm run build
-npm run preview
-```
+- [specs/001-pofang-demo/requirements.md](specs/001-pofang-demo/requirements.md) — 需求规格（EARS 验收标准）
+- [specs/001-pofang-demo/design.md](specs/001-pofang-demo/design.md) — 技术设计（状态机、接口契约、LLM Prompt、降级策略）
+- [specs/001-pofang-demo/tasks.md](specs/001-pofang-demo/tasks.md) — 任务清单与里程碑
 
-The build fixes `NODE_ENV=production` before loading Vite, independently of the terminal environment. It checks the frontend and bundled component types and emits `dist/index.html` and assets. `npm run preview` serves this output locally. Reuse passing checks while source is unchanged; no additional unit-test suite or browser QA is required by the template.
-
-## Optional Function
-
-The default page is entirely static and does not call a Function. For server behavior, adapt the public, credential-free example in `functions/handler.ts`. `functions/index.ts` is the Deno deployment entry point. Check `deno --version` before using a separate terminal for:
-
-```sh
-npm run check:function
-npm run dev:function
-```
-
-If Deno is unavailable, the static frontend can still build and run. Keep Function validation pending until Deno or an equivalent existing Function checker is available; `npm run build` checks the frontend only. Local proxy requests also need a running compatible Function server.
-
-The local service binds to `127.0.0.1:8000`; Vite development and built preview proxy `/functions/v1/app` to it, preserving the path. Probe with an available HTTP tool or Node `fetch`; with `curl` installed, for example:
-
-```sh
-curl --fail 'http://127.0.0.1:5173/functions/v1/app?name=Visitor'
-```
-
-Use Vite's actual port if it differs. The same frontend request after deployment is routed by Qoder Sites. Local proxy configuration is not production routing. Keep local-only servers and fixtures in `dev/`, outside both publication directories. The included Function has no dependencies; add self-contained runtime imports as required. Frontend npm dependencies are not automatically installed in Functions.
-
-## Publish with Qoder Sites
-
-Open a local conversation in this project and follow the `sites-hosting` skill. Workspace registration is optional. Use the directory returned by `get_context` with:
-
-- `webDirectory: "dist"` after the build.
-- `spa: false` for the default single page; use `true` when adding client-side deep routes that need fallback.
-- `functionDirectory: "functions"` only if the application uses the Function. Omit it for static-only delivery.
-
-The Sites tools prepare artifacts and generate the publication descriptor; publish completed hosted work by default, unless the user explicitly requests a preview first or defers publication. Do not upload the project root, `node_modules`, `dev`, or source as the web artifact. A successful build or release does not prove an external integration works.
-
-For a new database-backed React page, follow the installed `sites-building` Skill's `references/function-backend.md`. Its assembled `assets/function-backend/` example includes `Notes.tsx`, Function routes and a schema using the platform's private database credentials. For a runnable records-and-attachments workbench, use that Skill's `references/records-example.md`; its setup command assembles a new project from this starter and keeps local fixtures outside deployment outputs. Preserve and adapt its application identity and ownership checks before exposing private records. `references/database.md`, `assets/database-react/App.tsx` and `assets/database-function/` are for existing legacy allocations only. These optional assets stay in the Skill rather than being copied into every static project.
-
-For database or Storage, follow the corresponding `sites-building` references and `sites-management` capability workflow. For AI, follow `sites-build-agent-app` and keep Cloud Agents access in the Function. Application credentials belong in server-side Sites Settings; frontend environment variables are public. This starter does not implement visitor login, database permissions, Cloud resource coordination or QCA sessions; add those only for the requested feature using the existing skills.
-
-See `PROVENANCE.md` and `vendor/` for source attribution and the preserved stylesheet license.
-
-After copying the starter, rename `gitignore.template` to `.gitignore` before installing dependencies. This keeps the file available in npm and bundled CLI resources.
-
-## Design workbench
-
-On Desktop, call `open_design_workbench` with the project name and design registration (pages and implemented Nudge capabilities). The tool creates the single `.站点名称.qoder.site` entry; update it through `update_design_workbench`. The starter deliberately contains no fixed-name project entry. Components consume `--site-*` variables defined in the existing application stylesheet. The workbench only previews temporary overrides and attaches requested changes to chat. The Agent implements changes and prepares publication artifacts before reporting completion; no dedicated theme file is required.
+基于 Qoder Sites React starter（React + TS + Vite + Tailwind + Shadcn），模板来源见 [PROVENANCE.md](PROVENANCE.md)。
