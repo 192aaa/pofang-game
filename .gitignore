@@ -1,0 +1,13 @@
+node_modules/
+dist/
+.env
+.env.*
+!.env.example
+.DS_Store
+*.tsbuildinfo
+.qoder-sites/
+.qoder-sites.json
+
+# Qoder Sites 本地工作台/发布描述文件（本机状态，不入库）
+*.qoder.site
+.qoder/
