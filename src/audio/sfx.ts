@@ -39,6 +39,39 @@ function ac(): AudioContext | null {
   }
 }
 
+let unlocked = false;
+
+// 移动端音频解锁：必须在用户手势里创建/唤醒 AudioContext，异步判定后的音效才不会被静音
+export function unlockAudio() {
+  if (unlocked) return;
+  const c = ac();
+  if (!c) return;
+  try {
+    if (c.state === 'suspended') void c.resume();
+    const buf = c.createBuffer(1, 1, 22050);
+    const src = c.createBufferSource();
+    src.buffer = buf;
+    src.connect(c.destination);
+    src.start(0);
+    unlocked = true;
+  } catch {
+    // 忽略：部分环境不支持 WebAudio
+  }
+}
+
+if (typeof window !== 'undefined') {
+  const onGesture = () => {
+    if (!loadSfxEnabled()) return;
+    unlockAudio();
+    if (unlocked) {
+      window.removeEventListener('pointerdown', onGesture, true);
+      window.removeEventListener('keydown', onGesture, true);
+    }
+  };
+  window.addEventListener('pointerdown', onGesture, true);
+  window.addEventListener('keydown', onGesture, true);
+}
+
 function envelope(g: GainNode, t0: number, attack: number, decay: number, peak: number) {
   g.gain.setValueAtTime(0.0001, t0);
   g.gain.exponentialRampToValueAtTime(peak, t0 + attack);

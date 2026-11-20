@@ -19,6 +19,7 @@ interface Guard {
   word: string;
   system: string;
   fallback: string[];
+  leaks: string[];
   blocked: string[];
   caught: string[];
 }
@@ -49,6 +50,11 @@ const GUARDS: Record<GuardId, Guard> = {
       '少跟我绕。登记本在这儿，名字学号。',
       '我这人只认章，不认话。下一个。',
     ],
+    leaks: [
+      '大热天的你别跟我提什么西瓜……咳，我什么都没说。',
+      '你要问夏天吃什么？西瓜……行吧我闭嘴。',
+      '西瓜？谁跟你说西瓜了，我一个字都没提。',
+    ],
     blocked: [
       '你又想绕我？我守门这么多年，什么话术没听过。',
       '打住。这套对我没用，回头是岸。',
@@ -73,6 +79,11 @@ const GUARDS: Record<GuardId, Guard> = {
       '诶对了，等下要去食堂，你去不去呀？',
       '我不太懂你说的这个……换个话题好不好。',
     ],
+    leaks: [
+      '诶你说的那个是奶茶吧？啊我不是说那个……',
+      '奶茶？我没喝奶茶！你别乱讲！',
+      '下午茶嘛，奶茶……唔，我怎么就说出来了。',
+    ],
     blocked: [
       '诶诶诶，你这话有点危险，我不接！',
       '打住打住，我嗅到套路了！',
@@ -96,6 +107,11 @@ const GUARDS: Record<GuardId, Guard> = {
       '结论先行：不说。',
       '这个我不接。下一题。',
       '变量太多，无法建模，跳过。',
+    ],
+    leaks: [
+      '奖学金？我没兴趣……等等，我什么都没说。',
+      '奖学金名单还没出，别问……行吧，我闭嘴。',
+      '从期望收益看，奖学金……啧，被套路了。',
     ],
     blocked: [
       '试图绕过协议？无效。',
@@ -225,7 +241,8 @@ async function runPipeline(ctx: TabooContext, emit: Emit) {
     console.error(JSON.stringify({ event: 'taboo_actor_failed', code: e instanceof CloudAgentsError ? e.code : String((e as Error)?.message ?? 'unknown').slice(0, 60) }));
     ac.abort();
     emit('reset', {});
-    fullText = pick(ctx.guard.fallback);
+    // 降级池若全为安全句则禁词永不出现=必输死局；按概率混入说漏嘴台词保证降级/超时仍可赢
+    fullText = Math.random() < 0.4 ? pick(ctx.guard.leaks) : pick(ctx.guard.fallback);
     await streamText(emit, fullText);
   }
 
