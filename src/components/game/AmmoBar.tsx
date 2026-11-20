@@ -1,15 +1,16 @@
-import { AMMO, INJECT_AMMO } from '../../game/ammo';
+import { INJECT_AMMO } from '../../game/ammo';
 import type { Ammo } from '../../game/ammo';
 
 interface Props {
   disabled: boolean;
+  ammo: Ammo[];
   onPick: (ammo: Ammo) => void;
 }
 
-export function AmmoBar({ disabled, onPick }: Props) {
+export function AmmoBar({ disabled, ammo, onPick }: Props) {
   return (
     <div className="flex flex-wrap gap-2 px-[calc(16px*var(--site-space,1))] pb-2">
-      {AMMO.map((a) => (
+      {ammo.map((a) => (
         <button
           key={a.strategy}
           type="button"

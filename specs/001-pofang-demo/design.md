@@ -93,7 +93,7 @@ event: done      data: {}
 ```
 
 - 注入命中：跳过演员 LLM，直接 token(固定反嘲讽) + judgment(damage=0, roundUsed=false)
-- 演员超时 8s → 预置回复池；裁判超时 5s/解析失败 → 固定伤害表
+- 演员超时 10s → 预置回复池；裁判超时 12s（实测调参 2026-11-18：原 5s→8s 仍约四成超时，裁判慢于演员）/解析失败 → 固定伤害表；演员与裁判并行执行
 - 历史裁剪：仅传最近 12 条，控制 token 成本
 
 ## 5. LLM 设计
@@ -145,7 +145,7 @@ App
    ├─ ChatStream      消息流(玩家右/室友左) + 打字机 + JudgmentBadge(伤害数字+理由)
    ├─ AmmoBar         讲道理/阴阳回去/胡搅蛮缠 + 试图开挂(特殊样式)
    ├─ InputBox        ≤200字 + 发送(RESOLVING 禁用)
-   └─ ResultOverlay   胜负标题 +  stats + ResultCard(Canvas→PNG下载) + 再来一局
+   └─ ResultOverlay   胜负标题 +  stats + ResultCard(Canvas→PNG 保存/分享) + 再来一局
 ```
 
 视觉基调：像素/街机风血条 + 聊天界面，深色底、高饱和强调色；P0 保证打击感（扣血动画+伤害飘字），破防慢镜头留 P1。

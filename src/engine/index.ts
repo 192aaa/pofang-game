@@ -1,8 +1,9 @@
 import type { Engine } from '../game/types';
 import { mockEngine } from './mockEngine';
+import { apiEngine } from './apiEngine';
 
-// M2 在此接入 apiEngine（SSE → 云函数 → 双 LLM），通过配置切换。
-// Demo v0 固定 Mock，界面明确标注"演示引擎"。
-export const ENGINE_MODE: 'mock' | 'api' = 'mock';
+// 默认走真 LLM 云函数；?engine=mock 切回演示引擎（离线演示/开发，AC6.4）。
+const params = new URLSearchParams(window.location.search);
+export const ENGINE_MODE: 'mock' | 'api' = params.get('engine') === 'mock' ? 'mock' : 'api';
 
-export const engine: Engine = mockEngine;
+export const engine: Engine = ENGINE_MODE === 'mock' ? mockEngine : apiEngine;

@@ -1,11 +1,16 @@
 import { useEffect, useRef } from 'react';
 import type { ChatMsg } from '../../game/types';
-import { BOSS } from '../../game/persona';
+import { speak, speechSupported } from '../../audio/voice';
+import { InsightPanel } from './InsightPanel';
+
+const VOICE_OK = speechSupported();
 
 interface Props {
   messages: ChatMsg[];
   streamingText: string;
   resolving: boolean;
+  avatar: string;
+  insight: boolean;
 }
 
 function JudgmentBadge({ msg }: { msg: ChatMsg }) {
@@ -25,7 +30,7 @@ function JudgmentBadge({ msg }: { msg: ChatMsg }) {
   );
 }
 
-export function ChatStream({ messages, streamingText, resolving }: Props) {
+export function ChatStream({ messages, streamingText, resolving, avatar, insight }: Props) {
   const endRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
@@ -42,11 +47,25 @@ export function ChatStream({ messages, streamingText, resolving }: Props) {
           ) : (
             <div key={msg.id} className="msg-row-boss">
               <span className="msg-avatar" aria-hidden>
-                {BOSS.avatar}
+                {avatar}
               </span>
               <div className="flex max-w-[80%] flex-col items-start gap-1">
-                <div className="msg-boss">{msg.text}</div>
+                <div className="flex items-end gap-1">
+                  <div className="msg-boss">{msg.text}</div>
+                  {VOICE_OK && (
+                    <button
+                      type="button"
+                      className="msg-speak"
+                      onClick={() => speak(msg.text)}
+                      aria-label="朗读这句"
+                      title="朗读这句"
+                    >
+                      🔊
+                    </button>
+                  )}
+                </div>
                 <JudgmentBadge msg={msg} />
+                {insight && msg.judgment && <InsightPanel meta={msg.judgment.meta} />}
               </div>
             </div>
           ),
@@ -54,7 +73,7 @@ export function ChatStream({ messages, streamingText, resolving }: Props) {
         {resolving && (
           <div className="msg-row-boss">
             <span className="msg-avatar" aria-hidden>
-              {BOSS.avatar}
+              {avatar}
             </span>
             <div className="msg-boss">
               {streamingText || <span className="text-[var(--site-muted)]">正在嘴硬…</span>}

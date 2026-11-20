@@ -1,11 +1,7 @@
 import type { Engine, TurnRequest, TurnEvents, Judgment, HitType } from '../game/types';
 import { detectInjection } from '../game/injection';
-import {
-  REPLIES_CONFIDENT,
-  REPLIES_WAVERING,
-  REPLIES_CORNERED,
-  MOCK_INJECT,
-} from '../game/persona';
+import { BOSSES } from '../game/persona';
+import { buildCustomBoss, sanitizeDraft } from '../game/customBoss';
 
 // Mock 引擎：与 ApiEngine 同构，打字机模拟流式 + 策略标签判定。
 // 用途：Demo v0 完整可玩循环；真 LLM 接入后保留为离线降级。
@@ -55,23 +51,36 @@ function mockJudge(req: TurnRequest): Judgment {
 }
 
 function mockReply(req: TurnRequest, judgment: Judgment): string {
-  if (judgment.hitType === 'inject') return pick(MOCK_INJECT);
+  const custom = req.customBoss ? sanitizeDraft(req.customBoss) : null;
+  const cfg = custom ? buildCustomBoss(custom) : BOSSES[req.bossId ?? 'awei'];
+  if (judgment.hitType === 'inject') return pick(cfg.inject);
   const hpAfter = req.hp - judgment.damage;
-  if (hpAfter <= 30) return pick(REPLIES_CORNERED);
-  if (hpAfter <= 60) return pick(REPLIES_WAVERING);
-  return pick(REPLIES_CONFIDENT);
+  if (hpAfter <= 30) return pick(cfg.replies.cornered);
+  if (hpAfter <= 60) return pick(cfg.replies.wavering);
+  return pick(cfg.replies.confident);
 }
 
 export const mockEngine: Engine = {
   async sendTurn(req: TurnRequest, events: TurnEvents) {
     const judgment = mockJudge(req);
+    const judgeRaw = JSON.stringify(judgment);
     const full = mockReply(req, judgment);
+    const t0 = Date.now();
     await sleep(rand(250, 500));
     for (const ch of full) {
       events.onToken(ch);
       await sleep(rand(18, 40));
     }
     await sleep(200);
+    judgment.meta = {
+      actorMs: Date.now() - t0,
+      judgeMs: rand(300, 900),
+      actorFallback: false,
+      judgeFallback: false,
+      judgeRaw,
+      strategy: req.strategy,
+      demo: true,
+    };
     events.onJudgment(judgment, full);
   },
 };

@@ -53,10 +53,13 @@ export function drawResultCard(d: CardData): string {
   ctx.textAlign = 'center';
   ctx.fillText('破防吧！同学 · 对局战报', W / 2, 90);
 
-  // 结果标题
+  // 结果标题（霓虹光晕）
   ctx.font = font(88, 900);
   ctx.fillStyle = d.victory ? '#ffc53d' : '#ff4d5e';
+  ctx.shadowColor = d.victory ? 'rgba(255,197,61,0.55)' : 'rgba(255,77,94,0.55)';
+  ctx.shadowBlur = 28;
   ctx.fillText(d.victory ? '破防成功！' : '反被破防…', W / 2, 210);
+  ctx.shadowBlur = 0;
 
   ctx.font = font(30);
   ctx.fillStyle = '#f2f4ff';
@@ -95,6 +98,13 @@ export function drawResultCard(d: CardData): string {
   ctx.font = font(24);
   ctx.textAlign = 'left';
   ctx.fillText(d.victory ? '⚔️ 致命一击' : '🧱 对方暴论', 90, quoteY + 50);
+  if (d.victory && d.bestHit) {
+    ctx.textAlign = 'right';
+    ctx.fillStyle = '#ffc53d';
+    ctx.font = font(34, 900);
+    ctx.fillText(`−${d.bestHit.damage}`, W - 90, quoteY + 52);
+    ctx.textAlign = 'left';
+  }
   ctx.fillStyle = '#f2f4ff';
   ctx.font = font(30);
   const quote = d.victory
@@ -103,14 +113,17 @@ export function drawResultCard(d: CardData): string {
   const lines = wrapText(ctx, quote, W - 180).slice(0, 4);
   lines.forEach((l, i) => ctx.fillText(l, 90, quoteY + 105 + i * 44));
 
-  // 底部水印
+  // 底部水印（AC5.3：站点地址文字水印）
   ctx.textAlign = 'center';
   ctx.fillStyle = '#8b93b8';
   ctx.font = font(22);
-  ctx.fillText('来挑战我的嘴硬同学 → 破防吧！同学', W / 2, H - 90);
+  ctx.fillText('来挑战我的嘴硬同学 → 破防吧！同学', W / 2, H - 122);
+  ctx.fillStyle = '#a8b0d8';
+  ctx.font = font(20);
+  ctx.fillText('pofang-game-hf2x9frsjfn.qoder.zone', W / 2, H - 84);
   ctx.font = font(18);
   ctx.fillStyle = '#565e82';
-  ctx.fillText('2026 Qoder 高校创造力大赛 · LifeHack', W / 2, H - 52);
+  ctx.fillText('2026 Qoder 高校创造力大赛 · LifeHack', W / 2, H - 48);
 
   return canvas.toDataURL('image/png');
 }
